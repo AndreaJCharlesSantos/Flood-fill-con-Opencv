@@ -1,35 +1,78 @@
-from multiprocessing.connection import wait
-from typing import List
 import cv2
 import numpy as np
-from skimage.filters import threshold_local
 
-#Función que imprime la imagen
+
+class Node:
+    def __init__(self, x, y, label):
+        self.x = x
+        self.y = y
+        self.label = label
+
 def display_img(img,nombre="Imagen"):
     cv2.imshow(nombre,img)
     cv2.waitKey()
 
-#Lee el archivo de imagen y además cambia la dimensión
-img = cv2.imread('unidad3.jpg')
-img =cv2.resize(img,(800,800))
-display_img(img, nombre = "Herramientas")
+def main():
 
-#Creamos una copia de la imagen (que es la que estará sujeta para el algoritmo)
-imgC = img.copy()
-# display_img(imgC, nombre = "Copia de herramientas")
+    img = cv2.imread('unidad3.jpg',0)
+    img = cv2.resize(img, (500, 500))
+    display_img(img, nombre = "Imagen original")
+    copia = img.copy()
+    #Binarización de la imagen
+    ncopy = cv2.threshold(copia,128,255,  cv2.THRESH_BINARY_INV)[1]
+    # Cambiando el fondo a negro y lo demás a blanco
+    display_img(ncopy, nombre = "Copia de imagen")
+    cv2.waitKey()
+    regiones = regionLabeling(ncopy)
+    display_img(regiones, nombre = "Regiones")
+    cv2.waitKey()
+    pass
+
+def regionLabeling(img):
+    n = 1
+    height, width = img.shape
+    for u in range(height):
+        for v in range(width):
+            if img[u][v] == 255:
+                flood_fill_depth_first(img, u, v, n)
+                n += 1
+    return colorRegion(img)
+
+def colorRegion(img):
+    height, width = img.shape
+    img_color = np.zeros((height, width, 3), np.uint8)
+    colors = {}
+    for key in set(img.flatten()):
+        if key != 0:
+            colors[key] = np.random.randint(0, 256, 3)
+
+    for u in range(height):
+        for v in range(width):
+            if img[u][v] != 0:
+                img_color[u,v] = colors[img[u,v]]   
+    return img_color
+    
+
+def flood_fill_depth_first(img, u, v, label):
+    stack = []
+    stack.append(Node(u, v, label))
+    while not (len(stack) == 0):
+        node = stack.pop()
+        x = node.x
+        y = node.y
+        label = node.label
+        if img[y][x] == 255:
+            img[y][x] = label
+            if x < img.shape[1] - 1:
+                stack.append(Node(x + 1, y, label))
+            if x > 0:
+                stack.append(Node(x - 1, y, label))
+            if y < img.shape[0] - 1:
+                stack.append(Node(x, y + 1, label))
+            if y > 0:
+                stack.append(Node(x, y - 1, label))
 
 
-# En esta parte hace la detección de los 'bordes' de la (o las) imágenes en el uso de este programa
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-gray = cv2.GaussianBlur(gray, (5, 5), 0)
-borde = cv2.Canny(gray, 75, 200)
-display_img(borde, nombre = "Bordes")
-cv2.waitKey()
 
-
-#Usando esta librería hacer que se quite lo negro xd
-warped1 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-T = threshold_local(warped1, 11, offset = 10, method = "gaussian")
-warped1 = (warped1 > T).astype("uint8") * 255
-cv2.imshow("originalImg", warped1)
-cv2.waitKey()
+if __name__ == "__main__":
+    main()
