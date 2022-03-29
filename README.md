@@ -10,7 +10,6 @@ Diapositiva 43, 44, 45 y 46 de la Lectura 7, debe entregar el py que realiza la 
 ```python
 pip install opencv-contrib-python
 pip install numpy
-pip install scikit-image
 
 ```
 
